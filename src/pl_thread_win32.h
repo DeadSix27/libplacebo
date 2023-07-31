@@ -140,13 +140,11 @@ static inline int pl_thread_join(pl_thread thread)
     return 0;
 }
 
-// Returns true, if slept full time
+// Returns true if slept the full time, false if an error occurred
 static inline bool pl_thread_sleep(double t)
 {
     if (t <= 0.0)
         return true;
-
-    bool ret = false;
 
 #ifndef CREATE_WAITABLE_TIMER_HIGH_RESOLUTION
 # define CREATE_WAITABLE_TIMER_HIGH_RESOLUTION 0x2
@@ -162,21 +160,19 @@ static inline bool pl_thread_sleep(double t)
         timer = CreateWaitableTimerEx(NULL, NULL, 0, TIMER_ALL_ACCESS);
 
     if (!timer)
-        goto end;
+        return false;
 
     // Time is expected in 100 nanosecond intervals.
     // Negative values indicate relative time.
-    LARGE_INTEGER time = (LARGE_INTEGER){ .QuadPart = -(LONGLONG)(t * 1e7) };
+    LARGE_INTEGER time = { .QuadPart = -(LONGLONG)(t * 1e7) };
     if (!SetWaitableTimer(timer, &time, 0, NULL, NULL, 0))
-        goto end;
-
-    if (WaitForSingleObject(timer, INFINITE) != WAIT_OBJECT_0)
-        goto end;
-
-    ret = true;
-
-end:
-    if (timer)
+    {
         CloseHandle(timer);
+        return false;
+    }
+
+    bool ret = (WaitForSingleObject(timer, INFINITE) == WAIT_OBJECT_0);
+
+    CloseHandle(timer);
     return ret;
 }

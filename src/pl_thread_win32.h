@@ -166,7 +166,7 @@ static inline bool pl_thread_sleep(double t)
 
     // Time is expected in 100 nanosecond intervals.
     // Negative values indicate relative time.
-    LARGE_INTEGER time = (LARGE_INTEGER){ .QuadPart = -(t * 1e7) };
+    LARGE_INTEGER time = (LARGE_INTEGER){ .QuadPart = -(LONGLONG)(t * 1e7) };
     if (!SetWaitableTimer(timer, &time, 0, NULL, NULL, 0))
         goto end;
 
